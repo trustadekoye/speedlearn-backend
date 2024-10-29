@@ -69,8 +69,19 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         exam_id = self.request.query_params.get("exam")
+
         if exam_id:
-            return Question.objects.filter(exam_id=exam_id)
+            try:
+                # Get the specific exam and check for question count limit
+                exam = Exam.objects.get(id=exam_id)
+                question_limit = exam.question_count
+
+                # Filteer question by exam
+                questions = Question.objects.filter(exam_id=exam_id)
+
+                return questions[:question_limit]
+            except Exam.DoesNotExist:
+                return Question.objects.none()
         return Question.objects.none()
 
 
@@ -83,11 +94,13 @@ class SubmitAnswerView(APIView):
 
         try:
             question = Question.objects.get(id=question_id, exam_id=exam_id)
+
+            # Get the user's current active exam attempt
             user_exam = UserExam.objects.get(
                 user=request.user, exam_id=exam_id, end_time__isnull=True
             )
 
-            # Create or updatte users answer
+            # Create or update users answer for this attempt
             user_answer, created = UserAnswer.objects.update_or_create(
                 user=request.user,
                 question=question,
@@ -99,10 +112,7 @@ class SubmitAnswerView(APIView):
             is_correct = user_answer.is_correct()
 
             # Update the exam score
-            user_exam, created = UserExam.objects.get_or_create(
-                user=request.user, exam_id=exam_id
-            )
-            if is_correct:
+            if is_correct and created:
                 user_exam.score += 1
                 user_exam.save()
 
@@ -157,17 +167,20 @@ class UserExamViewSet(viewsets.ModelViewSet):
                     {"error": "Invalid exam_id"}, status=status.HTTP_400_BAD_REQUEST
                 )
 
-            serializer = self.get_serializer(
-                data={"exam": exam_id}, context={"request": request}
+            # Count existing attempts to set the next attempt number
+            previous_attempts = UserExam.objects.filter(
+                user=request.user, exam=exam
+            ).count()
+            new_attempt = previous_attempts + 1
+
+            # Create a new UserExam instance directly
+            user_exam = UserExam.objects.create(
+                user=request.user, exam=exam, attempt=new_attempt
             )
 
-            if serializer.is_valid():
-                user_exam = serializer.save(exam=exam)
-                return Response(
-                    self.get_serializer(user_exam).data, status=status.HTTP_201_CREATED
-                )
-            else:
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                self.get_serializer(user_exam).data, status=status.HTTP_201_CREATED
+            )
 
         except Exception as e:
             logger.error(f"Unexpected error in start_exam: {str(e)}")

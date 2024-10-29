@@ -9,6 +9,7 @@ from .models import (
 )
 from django.contrib.auth import get_user_model
 from users.models import MDA
+import random
 
 User = get_user_model()
 
@@ -50,6 +51,7 @@ class ExamSerializer(serializers.ModelSerializer):
     total_questions = serializers.SerializerMethodField()
     category = ExamCategorySerializer(read_only=True)
     grade_level = GradeLevelSerializer(many=True, read_only=True)
+    questions = serializers.SerializerMethodField()
 
     class Meta:
         model = Exam
@@ -66,6 +68,11 @@ class ExamSerializer(serializers.ModelSerializer):
 
     def get_total_questions(self, obj):
         return obj.questions.count()
+
+    def get_questions(self, obj):
+        # Fetch all questions for the exam
+        questions = [obj.questions.get(id=id) for id in obj.randomized_question_order]
+        return QuestionSerializer(questions, many=True).data
 
 
 # Serlaizeer for UserAnswer (user's selected answer)
@@ -105,6 +112,7 @@ class UserExamSerializer(serializers.ModelSerializer):
             "total_questions",
             "correct_answers",
             "user_answers",
+            "attempt",
         ]
         read_only_fields = ["user", "start_time", "score"]
 

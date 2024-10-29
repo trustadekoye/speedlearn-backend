@@ -3,6 +3,8 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.conf import settings
 from users.models import MDA
+import json
+import random
 
 User = get_user_model()
 
@@ -40,6 +42,15 @@ class Exam(models.Model):
     category = models.ForeignKey(ExamCategory, on_delete=models.CASCADE)
     grade_level = models.ManyToManyField(GradeLevel)
     duration = models.IntegerField()
+    question_count = models.IntegerField(default=0)
+    randomized_question_order = models.JSONField(default=list)
+
+    def save(self, *args, **kwargs):
+        questions = list(self.questions.all())
+        if len(questions) > self.question_count:
+            questions = random.sample(questions, self.question_count)
+        self.randomized_question_order = [q.id for q in questions]
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.title
@@ -115,16 +126,10 @@ class UserExam(models.Model):
     start_time = models.DateTimeField(auto_now_add=True)
     end_time = models.DateTimeField(null=True, blank=True)
     score = models.FloatField(default=0)
+    attempt = models.IntegerField(default=1)
 
     def __str__(self):
-        return f"{self.user} - {self.exam}"
+        return f"{self.user} - {self.exam} - Attempt {self.attempt}"
 
     class Meta:
-        # Unique constraint to prevent multiple active exams
-        constraints = [
-            models.UniqueConstraint(
-                fields=["user", "exam"],
-                condition=models.Q(end_time__isnull=True),
-                name="unique_active_exam",
-            )
-        ]
+        pass

@@ -12,7 +12,8 @@ from .views import (
 router = DefaultRouter()
 router.register(r"exam-categories", ExamCategoryViewSet, basename="exam-categories")
 router.register(r"grade-levels", GradeLevelViewSet)
-router.register(r"questions", QuestionViewSet)
+router.register(r"questions", QuestionViewSet, basename="questions")
+
 
 urlpatterns = [
     path("", include(router.urls)),
@@ -37,5 +38,8 @@ urlpatterns = [
         "user-exams/current/",
         UserExamViewSet.as_view({"get": "current_exam"}),
         name="current-exam",
+    ),
+    path(
+        "user-exams/", UserExamViewSet.as_view({"get": "list"}), name="user-exams-list"
     ),
 ]

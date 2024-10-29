@@ -1,11 +1,4 @@
 
-# Submit answers
-POST http://127.0.0.1:8000/exams/submit-answer/
-Authorization: Token 237669bd2a523ca28bf19ece2c6ba78a973845f7
+GET http://127.0.0.1:8000/exams/user-exams/list
+Authorization: Token 95332fe726e9630a5fd84fd152d3bac6f54de249
 Content-Type: application/json
-
-{
-    "exam": 4,
-    "question": 8,
-    "selected_key": "A"
-}
