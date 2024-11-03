@@ -147,3 +147,14 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
 AUTH_USER_MODEL = "users.CustomUser"
+
+# Email Settings
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587
+EMAIL_HOST_USER = "trustadekoye@gmail.com"
+EMAIL_HOST_PASSWORD = "xyqpelexxrytdvac"
+DEFAULT_FROM_EMAIL = "trustadekoye@gmail.com"
+
+# Frontend URL for password reset
+FRONTEND_URL = "http://localhost:3000"

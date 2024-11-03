@@ -1,0 +1,6 @@
+POST http://127.0.0.1:8000/users/password-reset
+Content-Type: application/json
+
+{
+    "email": "twelve01media@gmail.com"
+}

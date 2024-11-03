@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from .models import CustomUser, MDA
+from django.utils.http import urlsafe_base64_decode
+from django.contrib.auth.tokens import default_token_generator
 
 
 # Ministries, Departments and Agencies
@@ -77,3 +79,51 @@ class UserSerializer(serializers.ModelSerializer):
             "is_officer",
             "is_admin",
         )
+
+
+class PasswordResetSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def validate(self, data):
+        # Check if user exists with this email
+        email = data.get("email")
+        try:
+            user = CustomUser.objects.get(email=email)
+        except CustomUser.DoesNotExist:
+            raise serializers.ValidationError("User with this email does not exist")
+        data["user"] = user
+        return data
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    token = serializers.CharField()
+    uidb64 = serializers.CharField()
+    new_password = serializers.CharField(
+        write_only=True, style={"input_type": "password"}
+    )
+    confirm_password = serializers.CharField(
+        write_only=True, style={"input_type": "password"}
+    )
+
+    def validate(self, data):
+        if data.get("new_password") != data.get("confirm_password"):
+            raise serializers.ValidationError("Passwords do not match")
+        try:
+            uid = urlsafe_base64_decode(data.get("uidb64")).decode()
+            user = CustomUser.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, CustomUser.DoesNotExist):
+            raise serializers.ValidationError("Invalid reset link.")
+
+        # Verify token
+        if not default_token_generator.check_token(user, data.get("token")):
+            raise serializers.ValidationError("Invalid or expired reset link.")
+
+        # Add user to validated data
+        data["user"] = user
+        return data
+
+    def create(self, validated_data):
+        user = validated_data["user"]
+        user.set_password(validated_data["new_password"])
+        user.save()
+        return user
