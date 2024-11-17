@@ -1,0 +1,4 @@
+#Initialize Payment
+POST http://127.0.0.1:8000/payments/payments/
+Authorization: Token 95332fe726e9630a5fd84fd152d3bac6f54de249
+Content-Type: application/json

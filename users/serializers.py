@@ -107,12 +107,16 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 
     def validate(self, data):
         if data.get("new_password") != data.get("confirm_password"):
-            raise serializers.ValidationError("Passwords do not match")
+            raise serializers.ValidationError(
+                {"password_mismatch": "The two password fields didn't match."}
+            )
         try:
             uid = urlsafe_base64_decode(data.get("uidb64")).decode()
             user = CustomUser.objects.get(pk=uid)
         except (TypeError, ValueError, OverflowError, CustomUser.DoesNotExist):
-            raise serializers.ValidationError("Invalid reset link.")
+            raise serializers.ValidationError(
+                {"invalid_reset_link": "Invalid reset link."}
+            )
 
         # Verify token
         if not default_token_generator.check_token(user, data.get("token")):

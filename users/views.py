@@ -102,7 +102,9 @@ class PasswordResetView(APIView):
                 uid = urlsafe_base64_encode(force_bytes(user.pk))
 
                 # Create password reset link
-                reset_link = f"{settings.FRONTEND_URL}/password-reset/{uid}/{token}/"
+                reset_link = (
+                    f"{settings.FRONTEND_URL}/password-reset/confirm/{uid}/{token}/"
+                )
 
                 # Send email to user
                 try:
@@ -143,10 +145,10 @@ class PasswordResetConfirmView(APIView):
 
                 try:
                     send_mail(
-                        "Password Reset Confrimation",
-                        f"Your password has been reset successfully.",
-                        settings.DEFAULT_FROM_EMAIL,
-                        [user.email],
+                        subject="Password Reset Confrimation",
+                        message=f"Your password has been reset successfully.",
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[user.email],
                         fail_silently=False,
                     )
                 except Exception as e:

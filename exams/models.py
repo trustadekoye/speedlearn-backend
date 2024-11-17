@@ -43,7 +43,7 @@ class Exam(models.Model):
     grade_level = models.ManyToManyField(GradeLevel)
     duration = models.IntegerField()
     question_count = models.IntegerField(default=0)
-    randomized_question_order = models.JSONField(default=list)
+    randomized_question_order = models.JSONField(default=list, blank=True, null=True)
 
     def save(self, *args, **kwargs):
         questions = list(self.questions.all())

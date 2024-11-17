@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     "users",
     "exams",
+    "payments",
 ]
 
 MIDDLEWARE = [
@@ -152,9 +153,15 @@ AUTH_USER_MODEL = "users.CustomUser"
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
+EMAIL_USE_TLS = True
 EMAIL_HOST_USER = "trustadekoye@gmail.com"
-EMAIL_HOST_PASSWORD = "xyqpelexxrytdvac"
+EMAIL_HOST_PASSWORD = "mota kwad jufh bjbz"
 DEFAULT_FROM_EMAIL = "trustadekoye@gmail.com"
 
 # Frontend URL for password reset
 FRONTEND_URL = "http://localhost:3000"
+
+# Paystack Settings
+PLATFORM_ACCESS_FEE = 2000
+PAYSTACK_SECRET_KEY = "sk_test_c615cd9208b3e429e01b8f2819391ab43d844641"
+PAYSTACK_PUBLIC_KEY = "pk_test_662269b60fb5e9571b57b5ba4fc16aacb18051bf"
