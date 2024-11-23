@@ -48,7 +48,7 @@ class GradeLevelViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
 
-# Exam ViewSet
+# Exam ViewSet for List
 class ExamListView(generics.ListAPIView):
     serializer_class = ExamSerializer
 
