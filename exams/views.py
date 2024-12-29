@@ -23,6 +23,7 @@ from .serializers import (
     UserAnswerSerializer,
     UserExamSerializer,
 )
+from payments.permissions import HasPaidPlatformAccess
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +31,7 @@ logger = logging.getLogger(__name__)
 # Exam Category ViewSet
 class ExamCategoryViewSet(viewsets.ModelViewSet):
     serializer_class = ExamCategorySerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasPaidPlatformAccess]
 
     def get_queryset(self):
         # Retrieve the MDA of the currenty logged-in user
@@ -45,12 +46,13 @@ class ExamCategoryViewSet(viewsets.ModelViewSet):
 class GradeLevelViewSet(viewsets.ModelViewSet):
     queryset = GradeLevel.objects.all()
     serializer_class = GradeLevelSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasPaidPlatformAccess]
 
 
 # Exam ViewSet for List
 class ExamListView(generics.ListAPIView):
     serializer_class = ExamSerializer
+    permission_classes = [permissions.IsAuthenticated, HasPaidPlatformAccess]
 
     def get_queryset(self):
         category = self.request.query_params.get("category")
@@ -65,7 +67,7 @@ class ExamListView(generics.ListAPIView):
 class QuestionViewSet(viewsets.ModelViewSet):
     queryset = Question.objects.all()
     serializer_class = QuestionSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasPaidPlatformAccess]
 
     def get_queryset(self):
         exam_id = self.request.query_params.get("exam")
@@ -139,7 +141,7 @@ class SubmitAnswerView(APIView):
 class UserExamViewSet(viewsets.ModelViewSet):
     queryset = UserExam.objects.all()
     serializer_class = UserExamSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasPaidPlatformAccess]
 
     def get_queryset(self):
         return (

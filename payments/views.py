@@ -7,29 +7,60 @@ import requests
 import secrets
 from .models import PlatformAccess
 from .serializers import PlatformAccessSerializer
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class PaymentViewSet(viewsets.ModelViewSet):
-    serializer_class = PlatformAccessSerializer
+    permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
-        return PlatformAccess.objects.filter(user=self.request.user)
-
-    def create(self, request):
-        # Check if user has already paid
-        existing_access = PlatformAccess.objects.filter(
-            user=request.user, status="SUCCESS"
-        ).exists()
-
-        if existing_access:
+    def list(self, request):
+        """
+        Retrieve the current user's platform access status.
+        """
+        try:
+            platform_access = PlatformAccess.objects.get(user=request.user)
+            serializer = PlatformAccessSerializer(platform_access)
+            return Response(serializer.data)
+        except PlatformAccess.DoesNotExist:
             return Response(
-                {"error": "You already have access to the platform"},
-                status=status.HTTP_400_BAD_REQUEST,
+                {"error": "You have not paid for the platform"},
+                status=status.HTTP_404_NOT_FOUND,
             )
 
+    def create(self, request):
+        """
+        Initialize a payment or retry a failed/pending payment
+        """
+        try:
+            # Retrieve the user's existing platform access
+            platform_access = PlatformAccess.objects.get(user=request.user)
+
+            if platform_access.status == "SUCCESS":
+                return Response(
+                    {"error": "You already have access to the platform"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # Generate a new reference for retry
+            platform_access.reference = f"platform-access-{secrets.token_hex(16)}"
+            platform_access.status = "PENDING"
+            platform_access.save()
+
+        except PlatformAccess.DoesNotExist:
+            # Create a new record for the user
+            platform_access = PlatformAccess.objects.create(
+                user=request.user,
+                reference=f"platform-access-{secrets.token_hex(16)}",
+                amount=settings.PLATFORM_ACCESS_FEE,
+                status="PENDING",
+            )
+
+        # Prepare payment initialization data
         amount = settings.PLATFORM_ACCESS_FEE
         email = request.user.email
-        reference = f"platform-access-{secrets.token_hex(16)}"
+        reference = platform_access.reference
 
         headers = {
             "Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}",
@@ -50,11 +81,6 @@ class PaymentViewSet(viewsets.ModelViewSet):
         if response.status_code == 200:
             response_data = response.json()
 
-            # Create a platform access record
-            PlatformAccess.objects.create(
-                user=request.user, amount=amount, reference=reference
-            )
-
             return Response(
                 {
                     "payment_url": response_data["data"]["authorization_url"],
@@ -62,21 +88,31 @@ class PaymentViewSet(viewsets.ModelViewSet):
                 }
             )
 
+        logger.error(f"Paystack initialization failed: {response.json()}")
         return Response(
-            {
-                "error": "Could not initialize payment",
-            },
+            {"error": "Could not initialize payment"},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
 
-@api_view(["POST"])
+@api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
 def verify_payment(request):
-    reference = request.data.get("reference")
+    reference = (
+        request.data.get("reference")
+        or request.query_params.get("reference")
+        or request.data.get("trxref")
+        or request.query_params.get("trxref")
+    )
+    if not reference:
+        return Response(
+            {"error": "Reference is required"}, status=status.HTTP_400_BAD_REQUEST
+        )
 
     try:
-        platform_access = PlatformAccess.objects.get(reference=reference)
+        platform_access = PlatformAccess.objects.get(
+            user=request.user, reference=reference
+        )
 
         # Verify payment with Paystack
         headers = {
@@ -93,9 +129,12 @@ def verify_payment(request):
 
             if response_data["data"]["status"] == "success":
                 platform_access.status = "SUCCESS"
+                platform_access.verified_at = response_data["data"]["paid_at"]
                 platform_access.save()
 
-                return Response({"message": "Payment verified successfully"})
+                return Response(
+                    {"message": "Payment verified successfully", "status": "SUCCESS"}
+                )
 
         platform_access.status = "FAILED"
         platform_access.save()

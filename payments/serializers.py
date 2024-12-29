@@ -5,5 +5,5 @@ from .models import PlatformAccess
 class PlatformAccessSerializer(serializers.ModelSerializer):
     class Meta:
         model = PlatformAccess
-        fields = ["id", "amount", "reference", "status", "payment_date"]
-        read_only_fields = ["status", "payment_date", "reference"]
+        fields = ["id", "amount", "reference", "status", "created_at", "verified_at"]
+        read_only_fields = ["status", "created_at", "verified_at"]
