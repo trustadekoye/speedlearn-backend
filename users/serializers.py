@@ -57,10 +57,29 @@ class UserLoginSerializer(serializers.Serializer):
     password = serializers.CharField()
 
     def validate(self, data):
-        user = authenticate(username=data["email"], password=data["password"])
-        if user is not None:
-            return user
-        raise serializers.ValidationError("Invalid email or password")
+        email = data["email"]
+        password = data["password"]
+
+        # First check if user exists
+        try:
+            user = CustomUser.objects.get(email=email)
+        except CustomUser.DoesNotExist:
+            raise serializers.ValidationError(
+                {"email": "User with this email does not exist"}
+            )
+
+        # Then check if password is correct
+        if not user.check_password(password):
+            raise serializers.ValidationError({"password": "Invalid password"})
+
+        # If we get here, both email and password are correct
+        authenticated_user = authenticate(
+            username=data["email"], password=data["password"]
+        )
+        if authenticated_user is not None:
+            return authenticated_user
+
+        raise serializers.ValidationError("Unable to log in with provided credentials")
 
 
 class UserSerializer(serializers.ModelSerializer):

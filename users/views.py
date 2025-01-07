@@ -52,17 +52,28 @@ class UserLoginView(APIView):
         Login a user.
         """
         serializer = UserLoginSerializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.validated_data
-            token, created = Token.objects.get_or_create(user=user)
+        try:
+            if serializer.is_valid():
+                user = serializer.validated_data
+                token, created = Token.objects.get_or_create(user=user)
+                return Response(
+                    {
+                        "user": UserSerializer(user).data,
+                        "token": token.key,
+                    },
+                    status=status.HTTP_200_OK,
+                )
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except serializers.ValidationError as e:
             return Response(
-                {
-                    "user": UserSerializer(user).data,
-                    "token": token.key,
-                },
-                status=status.HTTP_200_OK,
+                e.detail,
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response(
+                {"detail": "An error occurred during login"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
 
 class UserView(APIView):
