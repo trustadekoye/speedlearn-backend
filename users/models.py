@@ -38,7 +38,7 @@ class CustomUser(AbstractUser):
     is_officer = models.BooleanField(default=True)
     is_admin = models.BooleanField(default=False)
     mda = models.ForeignKey(MDA, on_delete=models.SET_NULL, null=True, blank=True)
-    phone_number = models.CharField(max_length=15, blank=True)
+    phone_number = models.CharField(max_length=15, blank=True, unique=True)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["first_name", "last_name"]

@@ -1,9 +1,0 @@
-POST http://127.0.0.1:8000/users/password-reset/confirm
-Content-Type: application/json
-
-{
-    "token": "cgnq58-68a5936b3f5bc83d657080d47d0cbbcd",
-    "uidb64": "MTE",
-    "new_password": "123456789",
-    "confirm_password": "123456789"
-}

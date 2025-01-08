@@ -35,6 +35,24 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("date_joined",)
 
+        def validate_email(self, value):
+            """
+            Check if the email already exists
+            """
+            if CustomUser.objects.filter(email=value).exists():
+                raise serializers.ValidationError("User with this email already exists")
+            return value
+
+        def validate_phone_number(self, value):
+            """
+            Check if the phone number already exists
+            """
+            if value and CustomUser.objects.filter(phone_number=value).exists():
+                raise serializers.ValidationError(
+                    "User with this phone number already exists"
+                )
+            return value
+
     def create(self, validated_data):
         """
         Create and return a new `User` instance, given the validated data.
