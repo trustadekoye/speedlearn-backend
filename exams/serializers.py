@@ -76,7 +76,7 @@ class ExamSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if request and request.user:
             user_exam = UserExam.objects.filter(
-                user=request.user, exam=obj, end_time_isnull=True
+                user=request.user, exam=obj, end_time__isnull=True
             ).first()
 
             if user_exam and user_exam.randomized_questions:
