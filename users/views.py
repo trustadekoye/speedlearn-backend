@@ -114,7 +114,7 @@ class PasswordResetView(APIView):
 
                 # Create password reset link
                 reset_link = (
-                    f"{settings.FRONTEND_URL}/password-reset/confirm/{uid}/{token}/"
+                    f"{settings.FRONTEND_URL}password-reset/confirm/{uid}/{token}/"
                 )
 
                 # Send email to user
