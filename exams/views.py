@@ -175,14 +175,17 @@ class UserExamViewSet(viewsets.ModelViewSet):
             ).count()
             new_attempt = previous_attempts + 1
 
-            # Create a new UserExam instance directly
+            # Create new Userexam with randomized questions
+            questions = exam.get_randomized_questions()
             user_exam = UserExam.objects.create(
-                user=request.user, exam=exam, attempt=new_attempt
+                user=request.user,
+                exam=exam,
+                attempt=new_attempt,
+                randomized_questions=[q.id for q in questions],
             )
 
-            return Response(
-                self.get_serializer(user_exam).data, status=status.HTTP_201_CREATED
-            )
+            serializer = self.get_serializer(user_exam)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         except Exception as e:
             logger.error(f"Unexpected error in start_exam: {str(e)}")

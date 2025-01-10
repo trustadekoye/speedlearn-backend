@@ -61,6 +61,18 @@ class Exam(models.Model):
     def __str__(self):
         return self.title
 
+    def get_randomized_questions(self):
+        """
+        Get questions in a random order, respecting question count limit
+        """
+        questions = list(self.questions.all())
+        total_questions = (
+            min(len(questions), self.question_count)
+            if self.question_count > 0
+            else len(questions)
+        )
+        return random.sample(questions, total_questions)
+
 
 # Question class (Linked to the exam)
 class Question(models.Model):
@@ -135,6 +147,7 @@ class UserExam(models.Model):
     end_time = models.DateTimeField(null=True, blank=True)
     score = models.FloatField(default=0)
     attempt = models.IntegerField(default=1)
+    randomized_questions = models.JSONField(default=list, blank=True, null=True)
 
     def __str__(self):
         return f"{self.user} - {self.exam} - Attempt {self.attempt}"

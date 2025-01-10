@@ -67,11 +67,36 @@ class ExamSerializer(serializers.ModelSerializer):
         ]
 
     def get_total_questions(self, obj):
-        return obj.questions.count()
+        return (
+            obj.questions.count() if obj.question_count > 0 else obj.questions.count()
+        )
 
     def get_questions(self, obj):
-        # Fetch all questions for the exam
-        questions = [obj.questions.get(id=id) for id in obj.randomized_question_order]
+        # Get the current user exam if it exists
+        request = self.context.get("request")
+        if request and request.user:
+            user_exam = UserExam.objects.filter(
+                user=request.user, exam=obj, end_time_isnull=True
+            ).first()
+
+            if user_exam and user_exam.randomized_questions:
+                # Use the stored random order for ongoing exam
+                questions = [
+                    Question.objects.get(id=q_id)
+                    for q_id in user_exam.randomized_questions
+                ]
+            else:
+                # Generate new random order for new exam
+                questions = obj.get_randomized_questions()
+
+                # If this is a new exam, store the random order
+                if user_exam:
+                    user_exam.randomized_questions = [q.id for q in questions]
+                    user_exam.save()
+
+        else:
+            questions = obj.get_randomized_questions()
+
         return QuestionSerializer(questions, many=True).data
 
 
