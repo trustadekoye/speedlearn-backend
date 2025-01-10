@@ -46,6 +46,12 @@ class Exam(models.Model):
     randomized_question_order = models.JSONField(default=list, blank=True, null=True)
 
     def save(self, *args, **kwargs):
+        # If this is a new instance (no primary key yet)
+        if not self.pk:
+            self.randomized_question_order = []  # Initialize empty list
+            super().save(*args, **kwargs)  # Save first to get primary key
+
+        # Now access the questions and randomize the order
         questions = list(self.questions.all())
         if len(questions) > self.question_count:
             questions = random.sample(questions, self.question_count)
@@ -58,7 +64,7 @@ class Exam(models.Model):
 
 # Question class (Linked to the exam)
 class Question(models.Model):
-    CHOICE_KEYS = ["A", "B", "C", "D"]
+    CHOICE_KEYS = ["A", "B", "C", "D", "E"]
 
     exam = models.ForeignKey(Exam, related_name="questions", on_delete=models.CASCADE)
     question_text = models.TextField()
@@ -66,6 +72,7 @@ class Question(models.Model):
     choice_b = models.CharField(max_length=255, default="")
     choice_c = models.CharField(max_length=255, default="")
     choice_d = models.CharField(max_length=255, default="")
+    choice_e = models.CharField(max_length=255, default="")
     correct_key = models.CharField(
         max_length=1, choices=[(key, key) for key in CHOICE_KEYS], default="A"
     )
@@ -80,6 +87,7 @@ class Question(models.Model):
             {"key": "B", "value": self.choice_b},
             {"key": "C", "value": self.choice_c},
             {"key": "D", "value": self.choice_d},
+            {"key": "E", "value": self.choice_e},
         ]
 
     def clean(self):
@@ -91,7 +99,7 @@ class Question(models.Model):
 
 # UserAnswer class to the question
 class UserAnswer(models.Model):
-    CHOICE_KEYS = ["A", "B", "C", "D"]
+    CHOICE_KEYS = ["A", "B", "C", "D", "E"]
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
