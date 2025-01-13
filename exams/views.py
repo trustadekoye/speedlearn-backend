@@ -173,16 +173,16 @@ class UserExamViewSet(viewsets.ModelViewSet):
             previous_attempts = UserExam.objects.filter(
                 user=request.user, exam=exam
             ).count()
-            new_attempt = previous_attempts + 1
 
             # Create new Userexam with randomized questions
-            questions = exam.get_randomized_questions()
             user_exam = UserExam.objects.create(
                 user=request.user,
                 exam=exam,
-                attempt=new_attempt,
-                randomized_questions=[q.id for q in questions],
+                attempt=previous_attempts + 1,
             )
+
+            # Initialize questions with random selection and order
+            user_exam.initialize_questions()
 
             serializer = self.get_serializer(user_exam)
             return Response(serializer.data, status=status.HTTP_201_CREATED)

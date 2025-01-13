@@ -65,13 +65,21 @@ class Exam(models.Model):
         """
         Get questions in a random order, respecting question count limit
         """
-        questions = list(self.questions.all())
-        total_questions = (
-            min(len(questions), self.question_count)
+        all_questions = list(self.questions.all())
+        total_available = len(all_questions)
+
+        # If question_count is 0 or greater than the available questions, use all questions
+        questions_to_show = (
+            min(total_available, self.question_count)
             if self.question_count > 0
-            else len(questions)
+            else total_available
         )
-        return random.sample(questions, total_questions)
+
+        # Randomly select questions
+        selected_questions = random.sample(all_questions, questions_to_show)
+        # Randomly shuffle the order of selected questions
+        random.shuffle(selected_questions)
+        return selected_questions
 
 
 # Question class (Linked to the exam)
@@ -148,9 +156,47 @@ class UserExam(models.Model):
     score = models.FloatField(default=0)
     attempt = models.IntegerField(default=1)
     randomized_questions = models.JSONField(default=list, blank=True, null=True)
+    selected_questions = models.JSONField(default=list, blank=True, null=True)
+    question_order = models.JSONField(default=list, blank=True, null=True)
 
     def __str__(self):
         return f"{self.user} - {self.exam} - Attempt {self.attempt}"
+
+    def initialize_questions(self):
+        """
+        Initialize the questions for this attempt by randomly selecting and ordering them
+        """
+        all_questions = list(self.exam.questions.all().values_list("id", flat=True))
+        questions_to_show = (
+            min(len(all_questions), self.exam.question_count)
+            if self.exam.question_count > 0
+            else len(all_questions)
+        )
+
+        # Randomly select questions for this attempt
+        self.selected_questions = random.sample(all_questions, questions_to_show)
+        # Randomize the order of the selected questions
+        self.question_order = self.selected_questions.copy()
+        random.shuffle(self.question_order)
+        self.save()
+
+    def get_ordered_questions(self):
+        """
+        Get the questions in their randomized order for this attempt
+        """
+        if not self.question_order:
+            self.initialize_questions()
+
+        return Question.objects.filter(id__in=self.question_order).order_by(
+            # Preserve the random order we defined
+            models.Case(
+                *[
+                    models.When(id=id, then=pos)
+                    for pos, id in enumerate(self.question_order)
+                ],
+                output_field=models.IntegerField(),
+            )
+        )
 
     class Meta:
         pass

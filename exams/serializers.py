@@ -79,25 +79,13 @@ class ExamSerializer(serializers.ModelSerializer):
                 user=request.user, exam=obj, end_time__isnull=True
             ).first()
 
-            if user_exam and user_exam.randomized_questions:
-                # Use the stored random order for ongoing exam
-                questions = [
-                    Question.objects.get(id=q_id)
-                    for q_id in user_exam.randomized_questions
-                ]
+            if user_exam:
+                questions = user_exam.get_ordered_questions()
             else:
-                # Generate new random order for new exam
                 questions = obj.get_randomized_questions()
 
-                # If this is a new exam, store the random order
-                if user_exam:
-                    user_exam.randomized_questions = [q.id for q in questions]
-                    user_exam.save()
-
-        else:
-            questions = obj.get_randomized_questions()
-
-        return QuestionSerializer(questions, many=True).data
+            return QuestionSerializer(questions, many=True).data
+        return []
 
 
 # Serlaizeer for UserAnswer (user's selected answer)
